@@ -157,10 +157,14 @@
   <ItemGroup>
     <ClInclude Include="APU.h" />
     <ClInclude Include="CPU.h" />
+    <ClInclude Include="Debugger.h" />
+    <ClInclude Include="FileLoader.h" />
     <ClInclude Include="Memory.h" />
     <ClInclude Include="MMC.h" />
     <ClInclude Include="PPU.h" />
+    <ClInclude Include="ROM.h" />
     <ClInclude Include="SadNESs.h" />
+    <ClInclude Include="SDLGUI.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="test.h" />
@@ -168,10 +172,14 @@
   <ItemGroup>
     <ClCompile Include="APU.cpp" />
     <ClCompile Include="CPU.cpp" />
+    <ClCompile Include="Debugger.cpp" />
+    <ClCompile Include="FileLoader.cpp" />
     <ClCompile Include="Memory.cpp" />
     <ClCompile Include="MMC.cpp" />
     <ClCompile Include="PPU.cpp" />
+    <ClCompile Include="ROM.cpp" />
     <ClCompile Include="SadNESs.cpp" />
+    <ClCompile Include="SDLGUI.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

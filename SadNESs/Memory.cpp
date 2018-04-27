@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "Memory.h"
+#include "ROM.h"
+#include "FileLoader.h"
 
-
-Memory::Memory()
-{
-}
+char RAM[0xFFFF];
