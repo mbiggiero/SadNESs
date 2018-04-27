@@ -7,8 +7,21 @@ FILE *filePointer;
 int fileLenght;
 extern bool debug;
 
-FileLoader::FileLoader()
-{
+void dumpRom() {
+	int hexCount = 0;
+	for (int i = 0; i < fileLenght; ++i) {
+
+		printf("%.2x ", loadedROM[i] & 255);
+		if (hexCount < 15) {
+			hexCount++;
+		}
+		else {
+			std::cout << std::endl;
+			hexCount = 0;
+		}
+	}
+	//std::cout << buffer[i] << " ";
+	std::cout << std::endl;
 }
 
 void FileLoader::LoadRom(std::string)
@@ -23,20 +36,7 @@ void FileLoader::LoadRom(std::string)
 	fclose(filePointer); 
 
 	if (debug) {
-		int hexCount = 0;
-		for (int i = 0; i < fileLenght; ++i) {
-
-			printf("%.2x ", loadedROM[i] & 255);
-			if (hexCount < 15) {
-				hexCount++;
-			}
-			else {
-				std::cout << std::endl;
-				hexCount = 0;
-			}
-		}
-		//std::cout << buffer[i] << " ";
-		std::cout << std::endl;
+		//dumpRom();
 	}
 }
 
