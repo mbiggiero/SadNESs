@@ -1,13 +1,12 @@
 #include "stdafx.h"
 #include "CPU.h"
-#include "Memory.h"
+#include "RAM.h"
 #include "PPU.h"
 
-char memory[0xFFFF];
-
-char A;
-char X;
-char Y;
+byte A;
+byte X;
+byte Y;
+std::string ASM;//change name
 int PC;
 bool Flag_N; //TODO rewrite flags as byte
 bool Flag_V;
@@ -18,10 +17,44 @@ bool Flag_I;
 bool Flag_Z;
 bool Flag_C;
 
-char SP;
-char opcode;
-int cycleCount = 0;
-int cyclesLeft = 29780;
+byte SP;
+byte opcode;
+int cyclesCount;
+
+void CPUDebugLog() {
+	switch (opcode) {
+		case(0x10):
+			ASM = "BPL";
+			break;
+		case(0xAD):
+			ASM = "LDA";
+			break;
+		case(0x18):
+			ASM = "CLC";
+			break;
+		case(0x58):
+			ASM = "CLI";
+			break;
+		case(0xD8):
+			ASM = "CLD";
+			break;
+		case(0xB8):
+			ASM = "CLV";
+			break;
+		case(0x78):
+			ASM = "SEI";
+			break;
+		case(0x38):
+			ASM = "SEC";
+			break;
+		case(0xF8):
+			ASM = "SED";
+		default: {
+			ASM = "N/A";
+		}
+	}
+	printf("%X: \t%X\t%s\t\t\tA:%.2x X:%x Y:%x SP:%x N:%x V:%x 1:%x B:%x D:%x I:%x Z:%x C:%x CYC:%d\n", PC, opcode, ASM.c_str(), A & 0xFF, X, Y, SP, Flag_N, Flag_V, Flag_1, Flag_B, Flag_D, Flag_I, Flag_Z, Flag_C, cyclesCount);
+}
 
 void CPU::Initialize() {
 	opcode = 0x0;
@@ -42,15 +75,14 @@ void CPU::Initialize() {
 }
 
 void CPU::Run() {
-	int elapsedCycles = 0;
+	cyclesCount = 0;
 
-	while (elapsedCycles < 29780) {
-		CPU::Fetch();
-		CPU::Decode();
-	}
-	PPU::Cycle();
-	PPU::Cycle();
-	PPU::Cycle();
+	while (isRunning && (cyclesCount < 29780)) {
+		CPU::Cycle();
+		//PPU::Cycle();
+		//PPU::Cycle();
+		//PPU::Cycle();
+	}	
 }
 
 void CPU::Pause() {
@@ -62,99 +94,76 @@ void CPU::Reset() {
 }
 
 void CPU::Cycle() {
-	//TODO write CPU code
+	CPU::Fetch();
+	CPU::Decode();
 }
 
 void CPU::Fetch() {
-	opcode = memory[PC] & 0x255;
-	//printf("PC %x\n", PC);
+	opcode = RAM[PC];
+	//add ran::read and ram::write to account for mirrored ram
 }
 
 void CPU::Decode() {
 	int addr = 0x0;
-	switch (opcode & 0x255) { // 7/255 done!;
+	bool unknownOpcode = false; //debug
 
-	case(0x10):
-		//Flag_C = 0;
-		printf("%x: \t%x\tBPL\t\t\tA:%.2x X:%x Y:%x SP:%x N:%x V:%x 1:%x B:%x D:%x I:%x Z:%x C:%x CYC:%d\n",
-			PC, opcode&0x255, A&0x255, X, Y, SP, Flag_N, Flag_V, Flag_1, Flag_B, Flag_D, Flag_I, Flag_Z, Flag_C, cycleCount);
-		if (Flag_N == 0x0) { PC = PC + (memory[PC + 2] & 0x255); cycleCount++; }
-		else { PC = PC++; }
-		cyclesLeft = cyclesLeft - 1;
-		cycleCount = cycleCount + 2;
-		break;
+	switch (opcode) {
+		case(0x10): //BPL
+			if (Flag_N == 0x0) { PC = PC + (RAM[PC + 2] & 0xFF); cyclesCount++; }
+			else { PC = PC++; }
+			cyclesCount = cyclesCount + 2;
+			break;
 
-	case(0xAD):
-		addr = (((memory[PC + 3] & 0x255) << 8) | (memory[PC + 2] & 0x255));
-		//printf("%.2x and %.2x\n", (memory[PC + 3+0xF] & 0x255), (memory[PC +2+0xF]&0x255));
-		//printf("addr %x\n", ((memory[PC + 3 + 0xF] & 0x255)<<8) | (memory[PC + 2 + 0xF] & 0x255));
-		//printf("addr == %x\n", addr);
+		case(0xAD): //LDA
+			addr = (((RAM[PC + 3] & 0xFF) << 8) | (RAM[PC + 2] & 0xFF));
+			if (addr == 0x0) Flag_Z = 1; else Flag_Z = 0;
+			A = RAM[addr];
+			Flag_N = (A >> 7);
+			PC = PC + 2;
+			cyclesCount = cyclesCount + 4;
+			break;
 
-		if (addr == 0x0) Flag_Z = 1; else Flag_Z = 0;
-		A = memory[addr];
-		Flag_N = (A >> 7);
-		printf("%x: \t%x\tLDA\t\t\tA:%.2x X:%x Y:%x SP:%x N:%x V:%x 1:%x B:%x D:%x I:%x Z:%x C:%x CYC:%d\n",
-			PC, opcode&0x255, A&0x255, X, Y, SP, Flag_N, Flag_V, Flag_1, Flag_B, Flag_D, Flag_I, Flag_Z, Flag_C, cycleCount);
-		cyclesLeft = cyclesLeft - 1;
-		PC = PC + 2;
-		cycleCount = cycleCount + 4;
-		break;
-	case(0x18):
-		Flag_C = 0;
-		printf("%x: \t%x\tCLC\t\t\tA:%.2x X:%x Y:%x SP:%x N:%x V:%x 1:%x B:%x D:%x I:%x Z:%x C:%x CYC:%d\n",
-			PC, opcode&0x255, A&0x255, X, Y, SP, Flag_N, Flag_V, Flag_1, Flag_B, Flag_D, Flag_I, Flag_Z, Flag_C, cycleCount);
-		cyclesLeft = cyclesLeft - 1;
-		cycleCount = cycleCount + 2;
-		break;
-	case(0x58):
-		Flag_I = 0;
-		printf("%x: \t%x\tCLI\t\t\tA:%.2x X:%x Y:%x SP:%x N:%x V:%x 1:%x B:%x D:%x I:%x Z:%x C:%x CYC:%d\n",
-			PC, opcode&0x255, A&0x255, X, Y, SP, Flag_N, Flag_V, Flag_1, Flag_B, Flag_D, Flag_I, Flag_Z, Flag_C, cycleCount);
-		cyclesLeft = cyclesLeft - 1;
-		cycleCount = cycleCount + 2;
-		break;
-	case(0xD8):
-		Flag_D = 0;
-		printf("%x: \t%x\tCLD\t\t\tA:%.2x X:%x Y:%x SP:%x N:%x V:%x 1:%x B:%x D:%x I:%x Z:%x C:%x CYC:%d\n",
-			PC, opcode&0x255, A&0x255, X, Y, SP, Flag_N, Flag_V, Flag_1, Flag_B, Flag_D, Flag_I, Flag_Z, Flag_C, cycleCount);
-		cyclesLeft = cyclesLeft - 1;
-		cycleCount = cycleCount + 2;
-		break;
-	case(0xB8):
-		Flag_V = 0;
-		printf("%x: \t%x\tCLV\t\t\tA:%.2x X:%x Y:%x SP:%x N:%x V:%x 1:%x B:%x D:%x I:%x Z:%x C:%x CYC:%d\n",
-			PC, opcode&0x255, A&0x255, X, Y, SP, Flag_N, Flag_V, Flag_1, Flag_B, Flag_D, Flag_I, Flag_Z, Flag_C, cycleCount);
-		cyclesLeft = cyclesLeft - 1;
-		cycleCount = cycleCount + 2;
-		break;
+		case(0x18): //CLC
+			Flag_C = 0;
+			cyclesCount = cyclesCount + 2;
+			break;
 
-	case(0x78):
-		Flag_I = 1;
-		printf("%x: \t%x\tSEI\t\t\tA:%.2x X:%x Y:%x SP:%x N:%x V:%x 1:%x B:%x D:%x I:%x Z:%x C:%x CYC:%d\n",
-			PC, opcode&0x255, A&0x255, X, Y, SP, Flag_N, Flag_V, Flag_1, Flag_B, Flag_D, Flag_I, Flag_Z, Flag_C, cycleCount);
-		cyclesLeft = cyclesLeft - 1;
-		cycleCount = cycleCount + 2;
-		break;
-	case(0x38):
-		Flag_C = 1;
-		printf("%x: \t%x\tSEC\t\t\tA:%.2x X:%x Y:%x SP:%x N:%x V:%x 1:%x B:%x D:%x I:%x Z:%x C:%x CYC:%d\n",
-			PC, opcode&0x255, A&0x255, X, Y, SP, Flag_N, Flag_V, Flag_1, Flag_B, Flag_D, Flag_I, Flag_Z, Flag_C, cycleCount);
-		cyclesLeft = cyclesLeft - 1;
-		cycleCount = cycleCount + 2;
-		break;
-	case(0xF8):
-		Flag_D = 1;
-		printf("%x: \t%x\tSED\t\t\tA:%.2x X:%x Y:%x SP:%x N:%x V:%x 1:%x B:%x D:%x I:%x Z:%x C:%x CYC:%d\n",
-			PC, opcode&0x255, A&0x255, X, Y, SP, Flag_N, Flag_V, Flag_1, Flag_B, Flag_D, Flag_I, Flag_Z, Flag_C, cycleCount);
-		cyclesLeft = cyclesLeft - 1;
-		cycleCount = cycleCount + 2;
-		break;
+		case(0x58): //CLI
+			Flag_I = 0;
+			cyclesCount = cyclesCount + 2;
+			break;
 
-		//	case(0xAA):
-		//to do negative check
-		//break;
+		case(0xD8): //CLD
+			Flag_D = 0;
+			cyclesCount = cyclesCount + 2;
+			break;
 
-	default:printf("\nInvalid opcode: %.2x\n", opcode&0x255); cyclesLeft = 0;
+		case(0xB8): //CLV
+			Flag_V = 0;
+			cyclesCount = cyclesCount + 2;
+			break;
+
+		case(0x78): //SEI
+			Flag_I = 1;
+			cyclesCount = cyclesCount + 2;
+			break;
+
+		case(0x38):  //SEC
+			Flag_C = 1;
+			cyclesCount = cyclesCount + 2;
+			break;
+
+		case(0xF8): //SED
+			Flag_D = 1;
+			cyclesCount = cyclesCount + 2;
+			break;
+
+		default: {
+			unknownOpcode = true;
+			printf("\nUnknown opcode: %.2x\n", opcode); isRunning = false; 
+		}
 	}
+
+	if (debug & !unknownOpcode) CPUDebugLog();
 	PC++;
 }

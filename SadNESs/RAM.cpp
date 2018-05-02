@@ -1,6 +1,6 @@
 #include "stdafx.h"
-#include "Memory.h"
+#include "RAM.h"
 #include "ROM.h"
 #include "FileLoader.h"
 
-char RAM[0xFFFF];
+byte RAM[0xFFFF];

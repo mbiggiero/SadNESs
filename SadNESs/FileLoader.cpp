@@ -20,24 +20,20 @@ void dumpRom() {
 			hexCount = 0;
 		}
 	}
-	//std::cout << buffer[i] << " ";
+
 	std::cout << std::endl;
 }
 
-void FileLoader::LoadRom(std::string)
+void FileLoader::LoadRom(std::string romName)
 {
-	filePointer = fopen("donkey.nes", "rb"); //TODO replace with something safe
+	filePointer = fopen(romName.c_str(), "rb"); //TODO replace with something safe
 	fseek(filePointer, 0, SEEK_END);
 	fileLenght = ftell(filePointer);
 	rewind(filePointer); 
 
-	loadedROM = (char *)malloc((fileLenght + 1) * sizeof(char));
+	loadedROM = (byte *)malloc((fileLenght + 1) * sizeof(byte));
 	fread(loadedROM, fileLenght, 1, filePointer);
 	fclose(filePointer); 
-
-	if (debug) {
-		//dumpRom();
-	}
 }
 
 bool FileLoader::ValidateRom() {

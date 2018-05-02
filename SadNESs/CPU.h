@@ -1,10 +1,11 @@
 #pragma once
-extern char RAM[0xFFFF];
+extern byte RAM[0xFFFF];
+extern bool isRunning;
+extern bool debug;
 
 class CPU
 {
 public:
-	CPU();
 	static void Initialize();
 	static void Run();
 	static void Pause();

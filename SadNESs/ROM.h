@@ -1,13 +1,13 @@
 #pragma once
-extern char *loadedROM;
+extern byte *loadedROM;
+extern char PRG_size;
+extern char CHR_size;
+extern char RAM_size;
+extern char ROM_region;
 
 class ROM
 {
 public:
 	static void Setup();
-	static char PRG_size;
-	static char CHR_size;
-	static char RAM_size;
-	static char ROM_region;
 };
 

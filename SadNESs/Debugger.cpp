@@ -58,5 +58,5 @@ void Debugger::DumpHeader() {	//TODO rewrite
 	printf("Byte 9 bit 0\t \t%.1x \t \t 1 for PAL cartridges, otherwise assume NTSC.", (loadedROM[9] >> 7));
 	printf("\n");
 	printf("\n");
-	printf("Header dumped");
+	printf("Header dumped\n");
 }
