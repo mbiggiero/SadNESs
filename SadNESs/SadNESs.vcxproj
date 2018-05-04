@@ -159,6 +159,7 @@
     <ClInclude Include="CPU.h" />
     <ClInclude Include="Debugger.h" />
     <ClInclude Include="FileLoader.h" />
+    <ClInclude Include="IO.h" />
     <ClInclude Include="RAM.h" />
     <ClInclude Include="MMC.h" />
     <ClInclude Include="PPU.h" />
@@ -174,6 +175,7 @@
     <ClCompile Include="CPU.cpp" />
     <ClCompile Include="Debugger.cpp" />
     <ClCompile Include="FileLoader.cpp" />
+    <ClCompile Include="IO.cpp" />
     <ClCompile Include="RAM.cpp" />
     <ClCompile Include="MMC.cpp" />
     <ClCompile Include="PPU.cpp" />

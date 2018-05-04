@@ -8,7 +8,7 @@ byte X;
 byte Y;
 std::string ASM;//change name
 int PC;
-bool Flag_N; //TODO rewrite flags as byte
+bool Flag_N;
 bool Flag_V;
 bool Flag_1;
 bool Flag_B;
@@ -70,8 +70,8 @@ void CPU::Initialize() {
 	Flag_I = 0x0;
 	Flag_Z = 0x0;
 	Flag_C = 0x0;
-	PC = 0x8000;
-	RAM[0x2002] = 0x0;//A0	
+	PC = 0xC000; //0x8000 or 0xFFFC (2 bytes)
+	memory[0x2002] = 0x0;//A0	
 }
 
 void CPU::Run() {
@@ -99,8 +99,8 @@ void CPU::Cycle() {
 }
 
 void CPU::Fetch() {
-	opcode = RAM[PC];
-	//add ran::read and ram::write to account for mirrored ram
+	opcode = RAM::ReadByte(PC);
+	//add memory::read and memory::write to account for mirrored memory
 }
 
 void CPU::Decode() {
@@ -109,15 +109,15 @@ void CPU::Decode() {
 
 	switch (opcode) {
 		case(0x10): //BPL
-			if (Flag_N == 0x0) { PC = PC + (RAM[PC + 2] & 0xFF); cyclesCount++; }
+			if (Flag_N == 0x0) { PC = PC + (memory[PC + 2] & 0xFF); cyclesCount++; }
 			else { PC = PC++; }
 			cyclesCount = cyclesCount + 2;
 			break;
 
 		case(0xAD): //LDA
-			addr = (((RAM[PC + 3] & 0xFF) << 8) | (RAM[PC + 2] & 0xFF));
+			addr = (((memory[PC + 3] & 0xFF) << 8) | (memory[PC + 2] & 0xFF));
 			if (addr == 0x0) Flag_Z = 1; else Flag_Z = 0;
-			A = RAM[addr];
+			A = memory[addr];
 			Flag_N = (A >> 7);
 			PC = PC + 2;
 			cyclesCount = cyclesCount + 4;
@@ -160,7 +160,7 @@ void CPU::Decode() {
 
 		default: {
 			unknownOpcode = true;
-			printf("\nUnknown opcode: %.2x\n", opcode); isRunning = false; 
+			printf("\nUnknown opcode: %.2X\n", opcode); isRunning = false; 
 		}
 	}
 

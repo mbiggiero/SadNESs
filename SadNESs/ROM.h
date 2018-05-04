@@ -1,9 +1,12 @@
 #pragma once
+
+#include "RAM.h"
 extern byte *loadedROM;
-extern char PRG_size;
-extern char CHR_size;
-extern char RAM_size;
-extern char ROM_region;
+extern byte mapper;
+extern byte PRG_size;
+extern byte CHR_size;
+extern byte RAM_size;
+extern byte ROM_region;
 
 class ROM
 {
