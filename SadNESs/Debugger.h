@@ -8,5 +8,6 @@ class Debugger
 {
 public:
 	static void DumpHeader();
+	static void printd(const char*, ...);
 };
 
