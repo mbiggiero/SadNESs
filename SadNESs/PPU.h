@@ -1,4 +1,5 @@
 #pragma once
+extern int PP;
 class PPU
 {
 public:

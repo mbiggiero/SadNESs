@@ -7,6 +7,6 @@ public:
 	static void WriteByte(int, byte);
 	static byte ReadByte(int);
 	static void WriteDWORD(int, int);
-	static byte ReadDWORD(int);
+	static int ReadDWORD(int);
 };
 

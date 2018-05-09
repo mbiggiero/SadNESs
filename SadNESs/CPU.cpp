@@ -7,14 +7,15 @@
 byte A;
 byte X;
 byte Y;
-std::string ASM;//change name
+std::string ASM;
 int PC; //16 bit
 bool N; //7th bit == 1 => 1
 bool V;
 bool B;
-bool D; //pointless
+bool D;
 bool I;
 bool Z;
+bool O;
 bool C;
 
 byte SP; //push decrement pull increment
@@ -24,61 +25,57 @@ int CC;
 
 std::string debugString;
 int debugPC;
-int debugCC;
+int debugPP;
+byte debugA;
+byte debugX;
+byte debugY;
+byte debugP;
+byte debugSP;
 
 byte FlagsAsByte() {
-	byte FlagByte = 0x4;
-	FlagByte = FlagByte | (C << 0x7)
-		| (Z << 0x6)
-		| (I << 0x5)
-		| (D << 0x4)
-		| (V << 0x1)
-		| (N | N);
+	byte FlagByte = (C | C)
+		| (Z << 0x1)
+		| (I << 0x2)
+		| (D << 0x3)
+		| (B << 0x4)
+		| (O << 0x5)
+		| (V << 0x6)
+		| (N << 0x7);
 	return FlagByte;
 }
 
-void CPUDebugLog() {
+void DebugASM() {
 	switch (opcode) {
-		//JMP - Jump//
-		case(0x4C)://Absolute
-			ASM = "JMP";
-			break;
-		case(0x6C)://Indirect
-			ASM = "JMP";
-			break;
+		//JMP - Jump - Absolute
+		case(0x4C):	Debugger::Log(" %.2X %.2X  JMP $%.4X                       A", RAM::ReadByte(debugPC + 0x1), RAM::ReadByte(debugPC + 0x2), RAM::ReadDWORD(debugPC + 0x1)); break;
+		//JMP - Jump - Indirect
+		//case(0x6C): break;
 
-			/*
-		case(0x78):
-			ASM = "SEI";
-			break;
-		case(0xD8):
-			ASM = "CLD";
-			break;
-		case(0x18):
-			ASM = "CLC";
-			break;
-		case(0x58):
-			ASM = "CLI";
-			break;
-		case(0xB8):
-			ASM = "CLV";
-			break;
-		case(0x38):
-			ASM = "SEC";
-			break;
-		case(0xF8):
-			ASM = "SED";
-		case(0x10):
-			ASM = "BPL";
-			break;
-		case(0xAD):
-			ASM = "LDA";
-			break;*/
-		default: {
-			ASM = "N/A";
-		}
+		//LDX - Load X Register - Immediate
+		case(0xA2):	Debugger::Log(" %.2X     LDX #$%.2X                        A", RAM::ReadByte(debugPC + 0x1), RAM::ReadByte(debugPC + 0x1)); break;
+		//case(0xA6): break;
+		//case(0xB6): break;
+		//case(0xAE): break;
+		//case(0xBE): break;
+
+		//STX - Store X Register - Zero Page
+		case(0x86): Debugger::Log(" %.2X     STX $%.2X = %.2X                    A", RAM::ReadByte(debugPC + 0x1), RAM::ReadByte(debugPC + 0x1), debugX); break;
+		//case(0x96): break;
+		//case(0x8E): break;
 	}
-	Debugger::printd("%-5X %-9X %-31s A:%.2X X:%.2X Y:%.2X P:%.2X SP:%.2X CYC:%3d\n", debugPC, opcode, ASM.c_str(), A, X, Y, FlagsAsByte(), SP, debugCC);
+}
+
+void CPUDebugLog() {	
+	Debugger::Log("%-5X %X ", debugPC, opcode);	DebugASM();	Debugger::Log(":%.2X X:%.2X Y:%.2X P:%.2X SP:%.2X CYC:%3d\r", debugA, debugX, debugY, debugP, debugSP, debugPP); OutputDebugString("\n");
+	//printf("FLAGS: %x %x %x %x %x %x %x %x\n", C, Z, I, D, B, O ,V, N);
+}
+
+void setZ() {
+	if (X == 0) { Z = 1; };
+}
+
+void setN() {
+	if ((X & 0x80 >> 7) == 1) { N = 1; };
 }
 
 void CPU::Initialize() {
@@ -93,8 +90,8 @@ void CPU::Initialize() {
 	Z = 0x0;
 	I = 0x1;
 	D = 0x0;
-	//  0x1
-	//  0x1;
+	B = 0x0;
+	O = 0x1;
 	V = 0x0;
 	N = 0x0;
 	
@@ -104,6 +101,7 @@ void CPU::Initialize() {
 
 void CPU::Run() {
 	CC = 0;
+	PP = 0;
 
 	while (isRunning && (CC < 29780)) {
 		CPU::Cycle();
@@ -131,22 +129,31 @@ void CPU::Fetch() {
 }
 
 void CPU::Decode() {
-	addr = 0x0; //max 16 byte
 	bool unknownOpcode = false; //debug
-	debugPC = PC;
-	debugCC = CC;
+
+	if (debug) { debugPC = PC; debugPP = PP; debugA = A; debugX = X; debugY = Y; debugSP = SP; debugP = FlagsAsByte(); }
 
 	switch (opcode) {
-		//JMP - Jump//
-		case(0x4C)://Absolute
-			PC = RAM::ReadDWORD(PC+1);
-			CC = CC + 3;
-			break;
-		case(0x6C)://Indirect
-			PC = RAM::ReadDWORD(RAM::ReadDWORD(PC+1));
-			CC = CC + 5;
-			break;
+		//JMP - Jump - Absolute
+	case(0x4C):	PC = RAM::ReadDWORD(PC + 0x1);						PC--; CC = CC + 3; PP = PP + 9; break;
+		//JMP - Jump - Indirect
+		//case(0x6C): PC = RAM::ReadDWORD(RAM::ReadDWORD(PC+0x1)); PC--; CC = CC + 5; break;
 
+		//LDX - Load X Register - Immediate
+	case(0xA2):	X = RAM::ReadByte(PC + 1); setZ(); setN();			PC++; CC = CC + 2; PP = PP + 6; break;
+		//case(0xA6): break;//fix ^^
+		//case(0xB6): break;
+		//case(0xAE): break;
+		//case(0xBE): break;
+
+		//STX - Store X Register - Zero Page
+	case(0x86): RAM::WriteByte(RAM::ReadByte(PC + 1), X);			PC++; CC = CC + 3; PP = PP + 9; break;
+		//case(0x96): break;
+		//case(0x8E): break;
+
+
+
+		//--------------------------------------------------------------------------
 
 		/*case(0xD8): //CLD
 			D = 0;
@@ -199,11 +206,12 @@ void CPU::Decode() {
 			break;*/
 
 		default: {
-			Debugger::printd("\nUnknown opcode: %.2X\n", opcode);
+			Debugger::Log("\nUnknown opcode: %.2X\n", opcode);
 			unknownOpcode = true;			
 			isRunning = false; 
 		}
 	}
+
 	PC++;
 	if (debug & !unknownOpcode) CPUDebugLog();
 }

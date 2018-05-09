@@ -53,11 +53,11 @@ byte RAM::ReadByte(int address) {
 void RAM::WriteDWORD(int address, int value)
 {
 	if (address >= 0x0 && address < 0x2000) {
-		memory[(address+1) % 0x800] = value >> 7;
+		memory[(address + 1) % 0x800] = value >> 8;
 		memory[address % 0x800] = value & 0xFF;
 	}
 	else if (address >= 0x2000 && address < 0x4000) {
-		memory[0x2000 + (address + 1) % 0x8] = value >> 7;
+		memory[0x2000 + (address + 1) % 0x8] = value >> 8;
 		memory[0x2000 + address % 0x8] = value & 0xFF;
 	}
 	else if (address >= 0x4000 && address < 0x4020) {
@@ -68,23 +68,23 @@ void RAM::WriteDWORD(int address, int value)
 	}
 }
 
-byte RAM::ReadDWORD(int address)
+int RAM::ReadDWORD(int address)
 {
 	if (address >= 0x0 && address < 0x2000) {
-		return (memory[address + 1 % 0x800] << 7) & memory[address % 0x800];
+		return ((memory[address + 1 & 0x800] << 8) | memory[address & 0x800]);
 	}
 	else if (address >= 0x2000 && address < 0x4000) {
-		return (memory[0x2000 + (address + 1) % 0x8] << 7) & memory[0x2000 + address %0x8];
+		return ((memory[0x2000 + (address + 1) & 0x8] << 8) | memory[0x2000 + address & 0x8]);
 	}
 	else if (address >= 0x4000 && address < 0x4020) {
-		return (memory[address + 1] << 7) & memory[address];
+		return ((memory[address + 1] << 8) | memory[address]);
 	}
 	else if (address >= 0x8000 && address < 0xFFFF) {
 		if (PRG_size == 0x1) {
-			return (memory[0x8000 + (address +1) % 0x4000] << 7) & memory[0x8000 + address %0x8];
+			return (memory[0x8000 + (address + 1) % 0x4000] << 8) | memory[0x8000 + address % 0x4000];
 		}
 		else {
-			return (memory[address + 1] << 7) & memory[address];
+			return ((memory[address + 1] << 8) | memory[address]);
 		}
 	}
 	else {

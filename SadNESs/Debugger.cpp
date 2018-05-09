@@ -31,7 +31,7 @@ void drawText(std::string text, int text_size, int x, int y, Uint8 r, Uint8 g, U
 #include <stdarg.h>
 #include <ctype.h>
 
-void __cdecl Debugger::printd(const char *format, ...)
+void __cdecl Debugger::Log(const char *format, ...)
 {
 	char    buf[4096], *p = buf;
 	va_list args;
@@ -46,8 +46,8 @@ void __cdecl Debugger::printd(const char *format, ...)
 	while (p > buf  &&  isspace(p[-1]))
 		*--p = '\0';
 
-	*p++ = '\r';
-	*p++ = '\n';
+	//*p++ = '\r';
+	//*p++ = '\n';
 	*p = '\0';
 
 	OutputDebugString(buf);
