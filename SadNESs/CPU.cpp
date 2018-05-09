@@ -19,6 +19,7 @@ bool C;
 
 byte SP;
 byte opcode;
+int addr;
 int CC;
 
 std::string debugString;
@@ -122,9 +123,10 @@ void CPU::Fetch() {
 }
 
 void CPU::Decode() {
-	int addr = 0x0;
+	addr = 0x0; //max 16 byte
 	bool unknownOpcode = false; //debug
-
+	
+	PC++;
 	switch (opcode) {
 
 		case(0xD8): //CLD
@@ -167,7 +169,6 @@ void CPU::Decode() {
 			CC = CC + 2;
 			break;
 
-
 		case(0x38):  //SEC
 			C = 1;
 			CC = CC + 2;
@@ -188,5 +189,4 @@ void CPU::Decode() {
 	}
 
 	if (debug & !unknownOpcode) CPUDebugLog();
-	PC++;
 }

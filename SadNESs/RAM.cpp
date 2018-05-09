@@ -4,6 +4,12 @@
 #include "ROM.h"
 
 byte memory[0xFFFF];
+//#0000 - 00FF = zero page
+//#1000 - 10FF = stack
+
+//non - maskable interrupt handler($FFFA / B)
+//the power on reset location($FFFC / D)
+//the BRK / interrupt request handler($FFFE / F)
 
 void RAM::WriteByte(int address, byte value) {
 	if (address >= 0x0 && address < 0x2000) {
@@ -15,7 +21,7 @@ void RAM::WriteByte(int address, byte value) {
 	else if (address >= 0x4000 && address < 0x4020) {
 		//deny
 	}
-	else if (address >= 0x8000 && address < 0xFFFF) {
+	else if (address >= 0x8000 && address < 0xFFFA) {
 		//deny
 	}
 }
@@ -44,11 +50,45 @@ byte RAM::ReadByte(int address) {
 	}
 }
 
-void RAM::WriteDWORD(int, byte)
+void RAM::WriteDWORD(int address, int value)
 {
+	if (address >= 0x0 && address < 0x2000) {
+		memory[(address+1) % 0x800] = value >> 7;
+		memory[address % 0x800] = value & 0xFF;
+	}
+	else if (address >= 0x2000 && address < 0x4000) {
+		memory[0x2000 + (address + 1) % 0x8] = value >> 7;
+		memory[0x2000 + address % 0x8] = value & 0xFF;
+	}
+	else if (address >= 0x4000 && address < 0x4020) {
+		//deny
+	}
+	else if (address >= 0x8000 && address < 0xFFFA) {
+		//deny
+	}
 }
 
-byte RAM::ReadDWORD(int)
+byte RAM::ReadDWORD(int address)
 {
-	return byte();
+	if (address >= 0x0 && address < 0x2000) {
+		return (memory[address + 1 % 0x800] << 7) & memory[address % 0x800];
+	}
+	else if (address >= 0x2000 && address < 0x4000) {
+		return (memory[0x2000 + (address + 1) % 0x8] << 7) & memory[0x2000 + address %0x8];
+	}
+	else if (address >= 0x4000 && address < 0x4020) {
+		return (memory[address + 1] << 7) & memory[address];
+	}
+	else if (address >= 0x8000 && address < 0xFFFF) {
+		if (PRG_size == 0x1) {
+			return (memory[0x8000 + (address +1) % 0x4000] << 7) & memory[0x8000 + address %0x8];
+		}
+		else {
+			return (memory[address + 1] << 7) & memory[address];
+		}
+	}
+	else {
+		isRunning = false;
+		return 0;
+	}
 }
