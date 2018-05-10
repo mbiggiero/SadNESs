@@ -1,5 +1,6 @@
 #pragma once
 extern byte memory[0xFFFF];
+extern byte debugByte;
 
 class RAM
 {
