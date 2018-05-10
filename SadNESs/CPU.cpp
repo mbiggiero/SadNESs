@@ -22,6 +22,8 @@ byte SP; //push decrement pull increment
 byte opcode;
 int addr;
 int CC;
+int oldCC;
+int PP;
 
 std::string debugString;
 int debugPC;
@@ -105,9 +107,10 @@ void CPU::Run() {
 
 	while (isRunning && (CC < 29780)) {
 		CPU::Cycle();
-		//PPU::Cycle();
-		//PPU::Cycle();
-		//PPU::Cycle();
+		while (PP < (CC * 3)) {
+			PPU::Cycle();
+			PP++;
+		}
 	}	
 }
 
@@ -130,26 +133,27 @@ void CPU::Fetch() {
 
 void CPU::Decode() {
 	bool unknownOpcode = false; //debug
+	oldCC = CC;
 
 	if (debug) { debugPC = PC; debugPP = PP; debugA = A; debugX = X; debugY = Y; debugSP = SP; debugP = FlagsAsByte(); }
 
 	switch (opcode) {
 		//JMP - Jump - Absolute
-	case(0x4C):	PC = RAM::ReadDWORD(PC + 0x1);						PC--; CC = CC + 3; PP = PP + 9; break;
-		//JMP - Jump - Indirect
-		//case(0x6C): PC = RAM::ReadDWORD(RAM::ReadDWORD(PC+0x1)); PC--; CC = CC + 5; break;
+		case(0x4C):	PC = RAM::ReadDWORD(PC + 0x1);							PC--; CC = CC + 3; break;
+			//JMP - Jump - Indirect
+			//case(0x6C): PC = RAM::ReadDWORD(RAM::ReadDWORD(PC+0x1)); PC--; CC = CC + 5; break;
 
-		//LDX - Load X Register - Immediate
-	case(0xA2):	X = RAM::ReadByte(PC + 1); setZ(); setN();			PC++; CC = CC + 2; PP = PP + 6; break;
-		//case(0xA6): break;//fix ^^
-		//case(0xB6): break;
-		//case(0xAE): break;
-		//case(0xBE): break;
+			//LDX - Load X Register - Immediate
+		case(0xA2):	X = RAM::ReadByte(PC + 1); setZ(); setN();				PC++; CC = CC + 2; break;
+			//case(0xA6): break;//fix ^^
+			//case(0xB6): break;
+			//case(0xAE): break;
+			//case(0xBE): break;
 
-		//STX - Store X Register - Zero Page
-	case(0x86): RAM::WriteByte(RAM::ReadByte(PC + 1), X);			PC++; CC = CC + 3; PP = PP + 9; break;
-		//case(0x96): break;
-		//case(0x8E): break;
+			//STX - Store X Register - Zero Page
+		case(0x86): RAM::WriteByte(RAM::ReadByte(PC + 1), X);				PC++; CC = CC + 3; break;
+			//case(0x96): break;
+			//case(0x8E): break;
 
 
 
