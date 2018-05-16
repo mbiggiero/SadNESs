@@ -20,6 +20,7 @@ bool C;
 
 byte SP; //push decrement pull increment
 byte opcode;
+byte p;
 int addr;
 int CC;
 int PP;
@@ -44,6 +45,13 @@ byte FlagsAsByte() {
 		| (V << 0x6)
 		| (N << 0x7);
 	return FlagByte;
+}
+
+byte Flip(byte b) {
+	b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
+	b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
+	b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
+	return b;
 }
 
 byte FlagsAsByteBE() {
@@ -110,6 +118,10 @@ void DebugASM() {
 		
 		//CLC - Clear Carry Flag
 		case(0x18):	Debugger::Log("        CLC                             A"); break;
+		//CLD - Clear Decimal Mode
+		case(0xD8):	Debugger::Log("        CLD                             A"); break;
+		//CLV - Clear Overflow Flag
+		case(0xB8):	Debugger::Log("        CLV                             A"); break;
 
 		//LDA - Load Accumulator Immediate
 		case(0xA9): Debugger::Log(" %.2X     LDA #$%.2X                        A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1)); break;
@@ -131,7 +143,7 @@ void DebugASM() {
 		//case(0xC1): break;
 		//case(0xD1): break;
 		
-		//LDA - Load Accumulator Immediate
+		//AND - Load Accumulator Immediate
 		case(0x29): Debugger::Log(" %.2X     AND #$%.2X                        A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1)); break;
 		//case(0x25): break;
 		//case(0x35): break;
@@ -140,6 +152,26 @@ void DebugASM() {
 		//case(0x39): break;
 		//case(0x21): break;
 		//case(0x31): break;
+
+		//ORA - Logical Inclusive OR Immediate
+		case(0x09): Debugger::Log(" %.2X     ORA #$%.2X                        A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1)); break;
+		//case(0x05): break;
+		//case(0x15): break;
+		//case(0x0D): break;
+		//case(0x1D): break;
+		//case(0x19): break;
+		//case(0x01): break;
+		//case(0x11): break;
+
+		//EOR - Exclusive OR Immediate
+		case(0x49): Debugger::Log(" %.2X     EOR #$%.2X                        A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1)); break;
+		//case(0x45): break;
+		//case(0x55): break;
+		//case(0x4D): break;
+		//case(0x5D): break;
+		//case(0x59): break;
+		//case(0x41): break;
+		//case(0x51): break;
 
 		//BEQ - Branch if Equal
 		case(0xF0): Debugger::Log(" %.2X     BEQ $%.4X                       A", RAM::ReadByte(oldPC + 1), oldPC + RAM::ReadByte(oldPC + 1) + 2); break;
@@ -155,13 +187,19 @@ void DebugASM() {
 		case(0x70): Debugger::Log(" %.2X     BVS $%.4X                       A", RAM::ReadByte(oldPC + 1), oldPC + RAM::ReadByte(oldPC + 1) + 2); break;
 		//BVC - Branch if Overflow Clear
 		case(0x50): Debugger::Log(" %.2X     BVC $%.4X                       A", RAM::ReadByte(oldPC + 1), oldPC + RAM::ReadByte(oldPC + 1) + 2); break;
-	
+		//BMI - Branch if Minus
+		case(0x30): Debugger::Log(" %.2X     BMI $%.4X                       A", RAM::ReadByte(oldPC + 1), oldPC + RAM::ReadByte(oldPC + 1) + 2); break;
+
+
 		//PHP - Push Processor Status
 		case(0x08): Debugger::Log("        PHP                             A"); break;
+		//PHA - Push Accumulator
+		case(0x48): Debugger::Log("        PHA                             A"); break;
 
 		//PLA - Pull Accumulator
 		case(0x68): Debugger::Log("        PLA                             A"); break;
-
+		//PLP - Pull Processor Status
+		case(0x28): Debugger::Log("        PLP                             A"); break;
 	}
 }
 
@@ -290,7 +328,12 @@ void CPU::Decode() {
 		case(0xEA): CC = CC + 2; break;
 
 		//BIT - Bit Test Zero Page
-		case(0x24):	SetZ(A & ByteAtZeroPage()); N = ByteAtZeroPage() << 7 & 0xFF; V = ByteAtZeroPage() << 6 & 0xFF; CC = CC + 3; PC++; break;
+		case(0x24):
+			V = (ByteAtZeroPage() >> 6) & 0x1;
+			N = (ByteAtZeroPage() >> 7) & 0x1;
+			!(A & ByteAtZeroPage()) ? Z = 1 : Z = 0;//maybe remove z=0?
+			CC = CC + 3; PC++;
+			break;
 				
 		//LDA - Load Accumulator Immediate
 		case(0xA9): A = RAM::ReadByte(PC + 1); SetZ(A); SetN(A); PC++; CC = CC + 2; break;
@@ -302,7 +345,17 @@ void CPU::Decode() {
 		//case(0xA1): break;
 		//case(0xB1): break;
 
-		//AND - Logical AND - Immediate
+		//ORA - Logical Inclusive OR Immediate
+		case(0x09): A = A | RAM::ReadByte(PC + 1); SetZ(A); SetN(A); PC++; CC = CC + 2; break;
+		//case(0x05): break;
+		//case(0x15): break;
+		//case(0x0D): break;
+		//case(0x1D): break;
+		//case(0x19): break;
+		//case(0x01): break;
+		//case(0x11): break;
+
+		//AND - Logical AND Immediate
 		case(0x29): A = A & RAM::ReadByte(PC + 1); SetZ(A); SetN(A); PC++; CC = CC + 2; break;
 		//case(0x25): break;
 		//case(0x35): break;
@@ -312,8 +365,18 @@ void CPU::Decode() {
 		//case(0x21): break;
 		//case(0x31): break;
 
+		//EOR - Exclusive OR Immediate
+		case(0x49): A = A ^ RAM::ReadByte(PC + 1); SetZ(A); SetN(A); PC++; CC = CC + 2; break;
+		//case(0x45): break;
+		//case(0x55): break;
+		//case(0x4D): break;
+		//case(0x5D): break;
+		//case(0x59): break;
+		//case(0x41): break;
+		//case(0x51): break;
+
 		//CMP - Compare Immediate
-		case(0xC9): C = (A >= RAM::ReadByte(PC + 1) ? 1 : 0); Z = (A == RAM::ReadByte(PC + 1) ? 1 : 0); SetN(A); PC++; CC = CC + 2; break;
+		case(0xC9): C = (A >= RAM::ReadByte(PC + 1) ? 1 : 0); Z = (A == RAM::ReadByte(PC + 1) ? 1 : 0); SetN(A - RAM::ReadByte(PC + 1)); PC++; CC = CC + 2; break;
 		//case(0xC5): break;
 		//case(0xD5): break;
 		//case(0xCD): break;
@@ -350,6 +413,9 @@ void CPU::Decode() {
 		case(0x70): if (V == 1) { PC = PC + RAM::ReadByte(PC + 1) + 1; CheckPageSkip(); CC++; } else { PC++; } CC = CC + 2; break;
 		//BVC - Branch if Overflow Clear
 		case(0x50): if (V == 0) { PC = PC + RAM::ReadByte(PC + 1) + 1; CheckPageSkip(); CC++; }	else { PC++; } CC = CC + 2; break;
+		//BMI - Branch if Minus
+		case(0x30): if (N == 1) { PC = PC + RAM::ReadByte(PC + 1) + 1; CheckPageSkip(); CC++; }	else { PC++; } CC = CC + 2; break;
+
 
 		//SEC - Set Carry Flag
 		case(0x38):	C = 1; CC = CC + 2; break;
@@ -360,13 +426,20 @@ void CPU::Decode() {
 
 		//CLC - Clear Carry Flag
 		case(0x18): C = 0; CC = CC + 2; break;
+		//CLD - CLD - Clear Decimal Mode
+		case(0xD8): D = 0; CC = CC + 2; break;
+		//CLV - Clear Overflow Flag
+		case(0xB8): V = 0; CC = CC + 2; break;
 
 		//PHP - Push Processor Status
-		case(0x08): PushByteToStack(0x18 | FlagsAsByte()); CC = CC + 3; break;
+		case(0x08): PushByteToStack(0x10 | FlagsAsByte()); CC = CC + 3; break;
+		//PHA - Push Accumulator
+		case(0x48): PushByteToStack(A); CC = CC + 3; break;
 
 		//PLA - Pull Accumulator
 		case(0x68): A = PullByteFromStack(); SetZ(A); SetN(A); CC = CC + 4; break;
-
+		//PLP - Pull Processor Status
+		case(0x28): p = PullByteFromStack(); C = p & 0x1; Z = (p >> 1) & 0x1;	I = (p >> 2) & 0x1;	D = (p >> 3) & 0x1; B = 0; O = 1; V = (p >> 6) & 0x1;	N = (p >> 7) & 0x1;	CC = CC + 4; break;
 
 		default: {
 			if (debug) {
