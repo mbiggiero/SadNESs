@@ -46,6 +46,18 @@ byte FlagsAsByte() {
 	return FlagByte;
 }
 
+byte FlagsAsByteBE() {
+	byte FlagByte = (N | N)
+		| (V << 0x1)
+		| (O << 0x2)
+		| (B << 0x3)
+		| (D << 0x4)
+		| (I << 0x5)
+		| (Z << 0x6)
+		| (C << 0x7);
+	return FlagByte;
+}
+
 void DebugASM() {
 	switch (opcode) {
 		//JMP - Jump - Absolute
@@ -90,6 +102,10 @@ void DebugASM() {
 
 		//SEC - Set Carry Flag
 		case(0x38):	Debugger::Log("        SEC                             A"); break;
+		//SEI - Set Interrupt Disable
+		case(0x78):	Debugger::Log("        SEI                             A"); break;
+		//SED - Set Decimal Flag
+		case(0xF8): Debugger::Log("        SED                             A"); break;
 
 		
 		//CLC - Clear Carry Flag
@@ -105,6 +121,26 @@ void DebugASM() {
 		//case(0xA1): break;
 		//case(0xB1): break;
 
+		//CMP - Compare Immediate
+		case(0xC9):  Debugger::Log(" %.2X     CMP #$%.2X                        A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1)); break;
+		//case(0xC5): break;
+		//case(0xD5): break;
+		//case(0xCD): break;
+		//case(0xDD): break;
+		//case(0xD9): break;
+		//case(0xC1): break;
+		//case(0xD1): break;
+		
+		//LDA - Load Accumulator Immediate
+		case(0x29): Debugger::Log(" %.2X     AND #$%.2X                        A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1)); break;
+		//case(0x25): break;
+		//case(0x35): break;
+		//case(0x2D): break;
+		//case(0x3D): break;
+		//case(0x39): break;
+		//case(0x21): break;
+		//case(0x31): break;
+
 		//BEQ - Branch if Equal
 		case(0xF0): Debugger::Log(" %.2X     BEQ $%.4X                       A", RAM::ReadByte(oldPC + 1), oldPC + RAM::ReadByte(oldPC + 1) + 2); break;
 		//BNE - Branch if Not Equal
@@ -119,33 +155,47 @@ void DebugASM() {
 		case(0x70): Debugger::Log(" %.2X     BVS $%.4X                       A", RAM::ReadByte(oldPC + 1), oldPC + RAM::ReadByte(oldPC + 1) + 2); break;
 		//BVC - Branch if Overflow Clear
 		case(0x50): Debugger::Log(" %.2X     BVC $%.4X                       A", RAM::ReadByte(oldPC + 1), oldPC + RAM::ReadByte(oldPC + 1) + 2); break;
+	
+		//PHP - Push Processor Status
+		case(0x08): Debugger::Log("        PHP                             A"); break;
+
+		//PLA - Pull Accumulator
+		case(0x68): Debugger::Log("        PLA                             A"); break;
+
 	}
 }
 
 void CPUDebugLog() {	
-	Debugger::Log("%-5X %X ", oldPC, opcode);	DebugASM();	Debugger::Log(":%.2X X:%.2X Y:%.2X P:%.2X SP:%.2X CYC:%3d\r", debugA, debugX, debugY, debugP, debugSP, debugPP); OutputDebugString("\n");
+	Debugger::Log("%-5X %.2X ", oldPC, opcode);	DebugASM();	Debugger::Log(":%.2X X:%.2X Y:%.2X P:%.2X SP:%.2X CYC:%3d\r", debugA, debugX, debugY, debugP, debugSP, debugPP); OutputDebugString("\n");
 	//printf("FLAGS: %x %x %x %x %x %x %x %x\n", C, Z, I, D, B, O ,V, N);
 }
 
 void SetZ(byte target) {
-	if (target == 0) { Z = 1; } else Z = 0;
+	(!target) ? Z = 1: Z = 0;
 }
 
 void SetN(byte target) {
-	if ((target >> 7) == 1) N = 1; else N = 0;
+	(target >> 7) ? N = 1: N = 0;
 }
 
-void PushToStack() {
-	RAM::WriteDWORD(0x1000 + SP, PC);
+void PushDWORDToStack(int data) {
+	RAM::WriteDWORD(0x1000 + SP, data);
 	SP = SP - 2;
 }
 
-void PullFromStack() {
-	//printf("sp is %x and the value is %x\n",SP, RAM::RAM::ReadDWORD(0x1000 + SP));
+int PullDWORDFromStack() {
 	SP = SP + 2;
-	PC = RAM::ReadDWORD(0x1000 + SP);
-	//printf("pc is %x\n", PC);
-	
+	return RAM::ReadDWORD(0x1000 + SP);	
+}
+
+void PushByteToStack(byte data) {
+	RAM::WriteByte(0x1000 + SP, data);
+	SP = SP - 1;
+}
+
+byte PullByteFromStack() {
+	SP = SP + 1;
+	return RAM::ReadByte(0x1000 + SP);
 }
 
 void CheckPageSkip() {
@@ -154,7 +204,7 @@ void CheckPageSkip() {
 	}
 }
 
-byte ZeroPage() {
+byte ByteAtZeroPage() {
 	return RAM::ReadByte(RAM::ReadByte(PC + 1));
 }
 
@@ -231,16 +281,16 @@ void CPU::Decode() {
 		//case(0xBE): break;
 
 		//JSR - Jump to Subroutine
-		case(0x20):	PushToStack(); PC = RAM::ReadDWORD(PC + 1); PC--; CC = CC + 6; break;
+		case(0x20):	PushDWORDToStack(PC); PC = RAM::ReadDWORD(PC + 1); PC--; CC = CC + 6; break;
 
 		//RTS - Return from Subroutine
-		case(0x60): PullFromStack(); PC = PC + 2; CC = CC + 6; break;
+		case(0x60): PC = PullDWORDFromStack(); PC = PC + 2; CC = CC + 6; break;
 
 		//NOP - No Operation
 		case(0xEA): CC = CC + 2; break;
 
 		//BIT - Bit Test Zero Page
-		case(0x24):	SetZ(A & ZeroPage()); N = ZeroPage() << 7 & 0xFF; V = ZeroPage() << 6 & 0xFF; CC = CC + 3; PC++; break;
+		case(0x24):	SetZ(A & ByteAtZeroPage()); N = ByteAtZeroPage() << 7 & 0xFF; V = ByteAtZeroPage() << 6 & 0xFF; CC = CC + 3; PC++; break;
 				
 		//LDA - Load Accumulator Immediate
 		case(0xA9): A = RAM::ReadByte(PC + 1); SetZ(A); SetN(A); PC++; CC = CC + 2; break;
@@ -251,6 +301,26 @@ void CPU::Decode() {
 		//case(0xB9): break;
 		//case(0xA1): break;
 		//case(0xB1): break;
+
+		//AND - Logical AND - Immediate
+		case(0x29): A = A & RAM::ReadByte(PC + 1); SetZ(A); SetN(A); PC++; CC = CC + 2; break;
+		//case(0x25): break;
+		//case(0x35): break;
+		//case(0x2D): break;
+		//case(0x3D): break;
+		//case(0x39): break;
+		//case(0x21): break;
+		//case(0x31): break;
+
+		//CMP - Compare Immediate
+		case(0xC9): C = (A >= RAM::ReadByte(PC + 1) ? 1 : 0); Z = (A == RAM::ReadByte(PC + 1) ? 1 : 0); SetN(A); PC++; CC = CC + 2; break;
+		//case(0xC5): break;
+		//case(0xD5): break;
+		//case(0xCD): break;
+		//case(0xDD): break;
+		//case(0xD9): break;
+		//case(0xC1): break;
+		//case(0xD1): break;
 
 		//STX - Store X Register - Zero Page
 		case(0x86): RAM::WriteByte(RAM::ReadByte(PC + 1), X); PC++; CC = CC + 3; break;
@@ -283,9 +353,20 @@ void CPU::Decode() {
 
 		//SEC - Set Carry Flag
 		case(0x38):	C = 1; CC = CC + 2; break;
+		//SEI - Set Interrupt Disable
+		case(0x78): I = 1; CC = CC + 2; break;
+		//SED - Set Decimal Flag
+		case(0xF8): D= 1; CC = CC + 2; break;
 
 		//CLC - Clear Carry Flag
 		case(0x18): C = 0; CC = CC + 2; break;
+
+		//PHP - Push Processor Status
+		case(0x08): PushByteToStack(0x18 | FlagsAsByte()); CC = CC + 3; break;
+
+		//PLA - Pull Accumulator
+		case(0x68): A = PullByteFromStack(); SetZ(A); SetN(A); CC = CC + 4; break;
+
 
 		default: {
 			if (debug) {
