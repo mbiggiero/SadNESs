@@ -159,6 +159,10 @@ void DebugASM() {
 		//TXA - Transfer X to Accumulator
 		case(0x8A):	Debugger::Log("        TXA                             A"); break;
 
+		//TSX - Transfer Stack Pointer to X
+		case(0xBA):	Debugger::Log("        TSX                             A"); break;
+		//TXS - Transfer X to Stack Pointer
+		case(0x9A):	Debugger::Log("        TXS                             A"); break;
 
 		//LDA - Load Accumulator Immediate
 		case(0xA9): Debugger::Log(" %.2X     LDA #$%.2X                        A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1)); break;
@@ -332,13 +336,15 @@ void CPU::Initialize() {
 	
 	PC = 0xC000; //0x8000 or 0xFFFC (2 bytes)
 	memory[0x2002] = 0x0;//A0	
+
+	
 }
 
 void CPU::Run() {
 	CC = 0;
 	PP = 0;
 
-	while (isRunning && (CC < 29780)) {
+	while (isRunning){ //&& (CC < 29780)) {
 		PP = PP % 341;
 		CPU::Cycle();
 		while (PP < (CC * 3)) {
@@ -459,15 +465,15 @@ void CPU::Decode() {
 		//case(0xC1): break;
 		//case(0xD1): break;
 
+		//CPY - Compare X Register Immediate
+		case(0xE0): C = (X >= RAM::ReadByte(PC + 1) ? 1 : 0); Z = (X == RAM::ReadByte(PC + 1) ? 1 : 0); SetN(X - RAM::ReadByte(PC + 1)); PC++; CC = CC + 2; break;
+		//case(0xE4): break;
+		//case(0xEC): break;
+
 		//CPY - Compare Y Register Immediate
 		case(0xC0): C = (Y >= RAM::ReadByte(PC + 1) ? 1 : 0); Z = (Y == RAM::ReadByte(PC + 1) ? 1 : 0); SetN(Y - RAM::ReadByte(PC + 1)); PC++; CC = CC + 2; break;
 		//case(0xC4): break;
 		//case(0xCC): break;
-
-		//CPX - Compare X Register Immediate
-		case(0xE0): C = (X >= RAM::ReadByte(PC + 1) ? 1 : 0); Z = (X == RAM::ReadByte(PC + 1) ? 1 : 0); SetN(X - RAM::ReadByte(PC + 1)); PC++; CC = CC + 2; break;
-		//case(0xE4): break;
-		//case(0xEC): break;
 
 		//ADC - Add with Carry
 		case(0x69): 
@@ -507,7 +513,7 @@ void CPU::Decode() {
 		//STX - Store X Register - Zero Page
 		case(0x86): RAM::WriteByte(RAM::ReadByte(PC + 1), X); PC++; CC = CC + 3; break;
 		//case(0x96): break; ^maybe broken
-		//case(0x8E): break;
+		//case(0x8E): /*TODO */ break;
 
 		//STY - Store Y Register - Zero Page
 		case(0x84): RAM::WriteByte(RAM::ReadByte(PC + 1), Y); PC++; CC = CC + 3; break;
@@ -576,6 +582,11 @@ void CPU::Decode() {
 		//TXA - Transfer X to Accumulator
 		case(0x8A): A = X; SetZ(A); SetN(A); CC = CC + 2; break;
 
+		//TSX - Transfer Stack Pointer to X
+		case(0xBA):	X = SP; SetZ(X); SetN(X); CC = CC + 2; break;
+		//TXS - Transfer X to Stack Pointer
+		case(0x9A):	SP = X; CC = CC + 2; break;
+
 		//PHP - Push Processor Status
 		case(0x08): PushByteToStack(0x10 | FlagsAsByte()); CC = CC + 3; break;
 		//PHA - Push Accumulator
@@ -588,6 +599,7 @@ void CPU::Decode() {
 
 		default: {
 			if (debug) {
+				Debugger::EndLogging();
 				Debugger::Log("\nUnknown opcode: %.2X\n", opcode);
 				Debugger::Log("\nPC: %.2X\n\n", PC);
 				unknownOpcode = true;

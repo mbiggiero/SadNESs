@@ -8,6 +8,8 @@ class Debugger
 {
 public:
 	static void DumpHeader();
+	static void StartLogging();
+	static void EndLogging();
 	static void Log(const char*, ...);
 };
 

@@ -2,6 +2,7 @@
 #include "Debugger.h"
 #include "ROM.h"
 
+FILE *f;
 static TTF_Font * font;
 static SDL_Surface* debugSurface = NULL;
 static SDL_Texture* debugTexture = NULL;
@@ -31,6 +32,8 @@ void drawText(std::string text, int text_size, int x, int y, Uint8 r, Uint8 g, U
 #include <stdarg.h>
 #include <ctype.h>
 
+int debugCount = 0;
+
 void __cdecl Debugger::Log(const char *format, ...)
 {
 	char    buf[4096], *p = buf;
@@ -50,8 +53,94 @@ void __cdecl Debugger::Log(const char *format, ...)
 	//*p++ = '\n';
 	*p = '\0';
 
-	OutputDebugString(buf);
+	fprintf(f, buf);
+	//OutputDebugString(buf);	
+	if (debugCount == 2) {
+		fprintf(f, "\n");
+		debugCount = 0;
+	} else	debugCount++;
+
 }
+
+void CompareLogs(){
+	FILE *fp1 = fopen("file.txt", "r");
+	FILE *fp2 = fopen("nestest.log.txt", "r");
+
+	if (fp1 == NULL || fp2 == NULL)
+	{
+		printf("Error : Files not open");
+		exit(0);
+	}
+
+	char ch1 = getc(fp1);
+	char ch2 = getc(fp2);
+
+	int error = 0, pos = 0, lineNumber = 1;
+
+	while (ch1 != EOF){
+		pos++;
+
+		// if both variable encounters new
+		// line then line variable is incremented
+		// and pos variable is set to 0
+		if (ch1 == '\n' && ch2 == '\n')
+		{
+			lineNumber++;
+			pos = 0;
+		}
+
+		// if fetched data is not equal then
+		// error is incremented
+		if (ch1 != ch2)
+		{
+			error++;
+			printf("Line: %d\n", lineNumber);
+			while (ch1 != '\n') {
+				fseek(fp1, -2L, SEEK_CUR);
+				fseek(fp2, -2L, SEEK_CUR);
+				ch1 = getc(fp1); //AWFUL AWFUL AWFUL CODE AAAAAAAAAAAAAA
+				ch2 = getc(fp2); //DELETE THIS
+			}
+			break;
+		}
+
+		// fetching character until end of file
+		ch1 = getc(fp1);
+		ch2 = getc(fp2);
+	}
+
+	int count = 0;
+	if (error == 0) printf("OK\n\n"); else {
+		char line[88]; /* or other suitable maximum line size */	
+		fgets(line, sizeof line, fp2);
+		printf("%s", line);
+		fgets(line, sizeof line, fp1); /* read a line */
+		printf("%s\n\n", line);
+	};
+
+	//fclose(fp1);
+	fclose(fp2);
+}
+
+void Debugger::StartLogging() {
+	
+	f = fopen("file.txt", "w");
+	if (f == NULL)
+	{
+		printf("Error opening file!\n");
+		exit(1);
+	}
+	printf("Logging started.\n\n");
+}
+
+void Debugger::EndLogging() {
+	fclose(f);
+
+	CompareLogs();
+
+	printf("Logging ended.\n\n");
+}
+
 
 void Debugger::DumpHeader() {	//TODO rewrite
 	printf("Dumping header...");
