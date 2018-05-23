@@ -33,6 +33,8 @@ byte debugA;
 byte debugX;
 byte debugY;
 byte debugP;
+byte debugC;
+byte debugN;
 byte debugSP;
 
 byte FlagsAsByte() {
@@ -80,10 +82,22 @@ void DebugASM() {
 		//case(0xAE): break;
 		//case(0xBE): break;
 
+		//LDX - Load Y Register - Immediate
+		case(0xA0):	Debugger::Log(" %.2X     LDY #$%.2X                        A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1)); break;
+		//case(0xA4): break;
+		//case(0xB4): break;
+		//case(0xAC): break;
+		//case(0xBC): break;
+
 		//STX - Store X Register - Zero Page
 		case(0x86): Debugger::Log(" %.2X     STX $%.2X = %.2X                    A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1), debugByte); break;
 		//case(0x96): break;
 		//case(0x8E): break;
+
+		//STY - Store Y Register - Zero Page
+		case(0x84): Debugger::Log(" %.2X     STY $%.2X = %.2X                    A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1), debugByte); break;
+		//case(0x94): break;
+		//case(0x8C): break;
 
 		//STA - Store Accumulator Immediate
 		case(0x85): Debugger::Log(" %.2X     STA $%.2X = %.2X                    A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1), debugByte); break;
@@ -122,6 +136,29 @@ void DebugASM() {
 		case(0xD8):	Debugger::Log("        CLD                             A"); break;
 		//CLV - Clear Overflow Flag
 		case(0xB8):	Debugger::Log("        CLV                             A"); break;
+		//CLI - Clear Interrupt Disable
+		case(0x58):	Debugger::Log("        CLI                             A"); break;
+
+		//INY - Increment Y Register
+		case(0xC8):	Debugger::Log("        INY                             A"); break;
+		//INX - Increment X Register
+		case(0xE8):	Debugger::Log("        INX                             A"); break;
+
+		//DEY - Decrement Y Register
+		case(0x88):	Debugger::Log("        DEY                             A"); break;
+		//DEX - Decrement X Register
+		case(0xCA):	Debugger::Log("        DEX                             A"); break;
+
+		//TAY - Transfer Accumulator to Y
+		case(0xA8):	Debugger::Log("        TAY                             A"); break;
+		//TAX - Transfer Accumulator to X
+		case(0xAA):	Debugger::Log("        TAX                             A"); break;
+
+		//TYA - Transfer Y to Accumulator
+		case(0x98):	Debugger::Log("        TYA                             A"); break;
+		//TXA - Transfer X to Accumulator
+		case(0x8A):	Debugger::Log("        TXA                             A"); break;
+
 
 		//LDA - Load Accumulator Immediate
 		case(0xA9): Debugger::Log(" %.2X     LDA #$%.2X                        A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1)); break;
@@ -142,6 +179,36 @@ void DebugASM() {
 		//case(0xD9): break;
 		//case(0xC1): break;
 		//case(0xD1): break;
+
+		//CPY - Compare Y Register Immediate
+		case(0xC0):  Debugger::Log(" %.2X     CPY #$%.2X                        A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1)); break;
+		//case(0xC4): break;
+		//case(0xCC): break;
+
+		//CPX - Compare X Register Immediate
+		case(0xE0):  Debugger::Log(" %.2X     CPX #$%.2X                        A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1)); break;
+		//case(0xE4): break;
+		//case(0xEC): break;
+
+		//ADC - Add with Carry
+		case(0x69):  Debugger::Log(" %.2X     ADC #$%.2X                        A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1)); break;
+		//case(0x65): break;
+		//case(0x75): break;
+		//case(0x6D): break;
+		//case(0x7D): break;
+		//case(0x79): break;
+		//case(0x61): break;
+		//case(0x71): break;
+
+		//SBC - Subtract with Carry
+		case(0xE9):  Debugger::Log(" %.2X     SBC #$%.2X                        A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1)); break;
+		//case(0xE5): break;
+		//case(0xF5): break;
+		//case(0xED): break;
+		//case(0xFD): break;
+		//case(0xF9): break;
+		//case(0xE1): break;
+		//case(0xF1): break;
 		
 		//AND - Load Accumulator Immediate
 		case(0x29): Debugger::Log(" %.2X     AND #$%.2X                        A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1)); break;
@@ -213,7 +280,7 @@ void SetZ(byte target) {
 }
 
 void SetN(byte target) {
-	(target >> 7) ? N = 1: N = 0;
+	((target >> 7) & 0x1) ? N = 1: N = 0;
 }
 
 void PushDWORDToStack(int data) {
@@ -303,7 +370,7 @@ void CPU::Decode() {
 	oldCC = CC;
 	oldPC = PC;
 
-	if (debug) {debugPP = PP; debugA = A; debugX = X; debugY = Y; debugSP = SP; debugP = FlagsAsByte(); }
+	if (debug) { debugPP = PP; debugN = N; debugC = C; debugA = A; debugX = X; debugY = Y; debugSP = SP; debugP = FlagsAsByte(); }
 
 	switch (opcode) {
 		//JMP - Jump - Absolute
@@ -317,6 +384,13 @@ void CPU::Decode() {
 		//case(0xB6): break;
 		//case(0xAE): break;
 		//case(0xBE): break;
+
+		//LDY - Load Y Register - Immediate
+		case(0xA0):Y = RAM::ReadByte(PC + 1); SetZ(Y); SetN(Y); PC++; CC = CC + 2; break;
+		//case(0xA4): break;
+		//case(0xB4): break;
+		//case(0xAC): break;
+		//case(0xBC): break;
 
 		//JSR - Jump to Subroutine
 		case(0x20):	PushDWORDToStack(PC); PC = RAM::ReadDWORD(PC + 1); PC--; CC = CC + 6; break;
@@ -385,10 +459,60 @@ void CPU::Decode() {
 		//case(0xC1): break;
 		//case(0xD1): break;
 
+		//CPY - Compare Y Register Immediate
+		case(0xC0): C = (Y >= RAM::ReadByte(PC + 1) ? 1 : 0); Z = (Y == RAM::ReadByte(PC + 1) ? 1 : 0); SetN(Y - RAM::ReadByte(PC + 1)); PC++; CC = CC + 2; break;
+		//case(0xC4): break;
+		//case(0xCC): break;
+
+		//CPX - Compare X Register Immediate
+		case(0xE0): C = (X >= RAM::ReadByte(PC + 1) ? 1 : 0); Z = (X == RAM::ReadByte(PC + 1) ? 1 : 0); SetN(X - RAM::ReadByte(PC + 1)); PC++; CC = CC + 2; break;
+		//case(0xE4): break;
+		//case(0xEC): break;
+
+		//ADC - Add with Carry
+		case(0x69): 
+			A = RAM::ReadByte(PC + 1) + A + C; 
+			SetZ(A); 
+			SetN(A);  			
+			V = (debugN != N) && C ? 1 : 0;
+			C = (A < debugA) ? 1 : 0;
+			PC++; CC = CC + 2;	
+			break;
+		//case(0x65): break;
+		//case(0x75): break;
+		//case(0x6D): break;
+		//case(0x7D): break;
+		//case(0x79): break;
+		//case(0x61): break;
+		//case(0x71): break;
+
+		//SBC - Subtract with Carry
+		case(0xE9):
+			A = A - RAM::ReadByte(PC + 1) - !C;
+			SetZ(A); 
+			SetN(A); 
+			C = (A > debugA) ? 0 : 1;
+			V = (debugN != N) && C ? 1 : 0; 
+			PC++; CC = CC + 2;
+			break;
+		//case(0xE5): break;
+		//case(0xF5): break;
+		//case(0xED): break;
+		//case(0xFD): break;
+		//case(0xF9): break;
+		//case(0xE1): break;
+		//case(0xF1): break;
+
+
 		//STX - Store X Register - Zero Page
 		case(0x86): RAM::WriteByte(RAM::ReadByte(PC + 1), X); PC++; CC = CC + 3; break;
 		//case(0x96): break; ^maybe broken
 		//case(0x8E): break;
+
+		//STY - Store Y Register - Zero Page
+		case(0x84): RAM::WriteByte(RAM::ReadByte(PC + 1), Y); PC++; CC = CC + 3; break;
+		//case(0x94): break; ^maybe broken
+		//case(0x8C): break;
 
 		//STA - Store Accumulator Immediate
 		case(0x85): RAM::WriteByte(RAM::ReadByte(PC + 1), A); PC++; CC = CC + 3; break;
@@ -405,31 +529,52 @@ void CPU::Decode() {
 		case(0xB0): if (C == 1) { PC = PC + RAM::ReadByte(PC + 1) + 1; CheckPageSkip(); CC++; }	else { PC++; } CC = CC + 2; break;
 		//BEQ - Branch if Equal
 		case(0xF0): if (Z == 1) { PC = PC + RAM::ReadByte(PC + 1) + 1; CheckPageSkip(); CC++; }	else { PC++; } CC = CC + 2; break;
+		//BMI - Branch if Minus
+		case(0x30): if (N == 1) { PC = PC + RAM::ReadByte(PC + 1) + 1; CheckPageSkip(); CC++; } else { PC++; } CC = CC + 2; break;
 		//BNE - Branch if Not Equal
 		case(0xD0): if (Z == 0) { PC = PC + RAM::ReadByte(PC + 1) + 1; CheckPageSkip(); CC++; }	else { PC++; } CC = CC + 2; break;
 		//BPL - Branch if Positive
 		case(0x10): if (N == 0) { PC = PC + RAM::ReadByte(PC + 1) + 1; CheckPageSkip(); CC++; }	else { PC++; } CC = CC + 2; break;
+		//BVC - Branch if Overflow Clear
+		case(0x50): if (V == 0) { PC = PC + RAM::ReadByte(PC + 1) + 1; CheckPageSkip(); CC++; } else { PC++; } CC = CC + 2; break;
 		//BVS - Branch if Overflow Set
 		case(0x70): if (V == 1) { PC = PC + RAM::ReadByte(PC + 1) + 1; CheckPageSkip(); CC++; } else { PC++; } CC = CC + 2; break;
-		//BVC - Branch if Overflow Clear
-		case(0x50): if (V == 0) { PC = PC + RAM::ReadByte(PC + 1) + 1; CheckPageSkip(); CC++; }	else { PC++; } CC = CC + 2; break;
-		//BMI - Branch if Minus
-		case(0x30): if (N == 1) { PC = PC + RAM::ReadByte(PC + 1) + 1; CheckPageSkip(); CC++; }	else { PC++; } CC = CC + 2; break;
-
 
 		//SEC - Set Carry Flag
 		case(0x38):	C = 1; CC = CC + 2; break;
+		//SED - Set Decimal Flag
+		case(0xF8): D = 1; CC = CC + 2; break;
 		//SEI - Set Interrupt Disable
 		case(0x78): I = 1; CC = CC + 2; break;
-		//SED - Set Decimal Flag
-		case(0xF8): D= 1; CC = CC + 2; break;
 
 		//CLC - Clear Carry Flag
 		case(0x18): C = 0; CC = CC + 2; break;
 		//CLD - CLD - Clear Decimal Mode
 		case(0xD8): D = 0; CC = CC + 2; break;
+		//CLI - Clear Interrupt Disable
+		case(0x58): I = 0; CC = CC + 2; break;
 		//CLV - Clear Overflow Flag
 		case(0xB8): V = 0; CC = CC + 2; break;
+
+		//INY - Increment Y Register
+		case(0xC8): Y++; SetZ(Y); SetN(Y); CC = CC + 2; break;
+		//INX - Increment X Register
+		case(0xE8): X++; SetZ(X); SetN(X); CC = CC + 2; break;
+
+		//DEY - Decrement Y Register
+		case(0x88):	Y--; SetZ(Y); SetN(Y); CC = CC + 2; break;
+		//DEX - Decrement X Register
+		case(0xCA): X--; SetZ(X); SetN(X); CC = CC + 2; break;
+
+		//TAY - Transfer Accumulator to Y
+		case(0xA8):	Y = A; SetZ(Y); SetN(Y); CC = CC + 2; break;
+		//TAX - Transfer Accumulator to X
+		case(0xAA): X = A; SetZ(X); SetN(X); CC = CC + 2; break;
+
+		//TYA - Transfer Y to Accumulator
+		case(0x98): A = Y; SetZ(A); SetN(A); CC = CC + 2; break;
+		//TXA - Transfer X to Accumulator
+		case(0x8A): A = X; SetZ(A); SetN(A); CC = CC + 2; break;
 
 		//PHP - Push Processor Status
 		case(0x08): PushByteToStack(0x10 | FlagsAsByte()); CC = CC + 3; break;
@@ -444,7 +589,7 @@ void CPU::Decode() {
 		default: {
 			if (debug) {
 				Debugger::Log("\nUnknown opcode: %.2X\n", opcode);
-				Debugger::Log("\nPC: %.2X\n", PC);
+				Debugger::Log("\nPC: %.2X\n\n", PC);
 				unknownOpcode = true;
 			}
 			isRunning = false;
