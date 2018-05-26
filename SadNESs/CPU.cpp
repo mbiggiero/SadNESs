@@ -82,7 +82,7 @@ void DebugASM() {
 		//case(0xAE): break;
 		//case(0xBE): break;
 
-		//LDX - Load Y Register - Immediate
+		//LDY - Load Y Register - Immediate
 		case(0xA0):	Debugger::Log(" %.2X     LDY #$%.2X                        A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1)); break;
 		//case(0xA4): break;
 		//case(0xB4): break;
@@ -275,7 +275,7 @@ void DebugASM() {
 }
 
 void CPUDebugLog() {	
-	Debugger::Log("%-5X %.2X ", oldPC, opcode);	DebugASM();	Debugger::Log(":%.2X X:%.2X Y:%.2X P:%.2X SP:%.2X CYC:%3d\r", debugA, debugX, debugY, debugP, debugSP, debugPP); OutputDebugString("\n");
+	Debugger::Log("%-5X %.2X ", oldPC, opcode);	DebugASM();	Debugger::Log(":%.2X X:%.2X Y:%.2X P:%.2X SP:%.2X CYC:%3d\r", debugA, debugX, debugY, debugP, debugSP, debugPP);
 	//printf("FLAGS: %x %x %x %x %x %x %x %x\n", C, Z, I, D, B, O ,V, N);
 }
 
@@ -465,7 +465,7 @@ void CPU::Decode() {
 		//case(0xC1): break;
 		//case(0xD1): break;
 
-		//CPY - Compare X Register Immediate
+		//CPX - Compare X Register Immediate
 		case(0xE0): C = (X >= RAM::ReadByte(PC + 1) ? 1 : 0); Z = (X == RAM::ReadByte(PC + 1) ? 1 : 0); SetN(X - RAM::ReadByte(PC + 1)); PC++; CC = CC + 2; break;
 		//case(0xE4): break;
 		//case(0xEC): break;
@@ -600,8 +600,7 @@ void CPU::Decode() {
 		default: {
 			if (debug) {
 				Debugger::EndLogging();
-				Debugger::Log("\nUnknown opcode: %.2X\n", opcode);
-				Debugger::Log("\nPC: %.2X\n\n", PC);
+				printf("\nUnknown opcode: %.2X at %.2X\n", opcode, PC);
 				unknownOpcode = true;
 			}
 			isRunning = false;
