@@ -25,9 +25,11 @@ void RAM::WriteByte(int address, byte value) {
 	}
 	else if (address >= 0x4000 && address < 0x4020) {
 		//deny
+		printf("denied");
 	}
 	else if (address >= 0x8000 && address < 0xFFFA) {
 		//deny
+		printf("denied");
 	}
 }
 
@@ -39,7 +41,7 @@ byte RAM::ReadByte(int address) {
 		return memory[0x2000 + address % 0x8];
 	}
 	else if (address >= 0x4000 && address < 0x4020) {
-		Debugger::Log("I/O");
+		printf("I/O");
 		return memory[address];
 	}
 	else if (address >= 0x8000 && address < 0xFFFA) {
@@ -68,9 +70,11 @@ void RAM::WriteDWORD(int address, int value)
 	}
 	else if (address >= 0x4000 && address < 0x4020) {
 		//deny
+		printf("denied");
 	}
 	else if (address >= 0x8000 && address < 0xFFFA) {
 		//deny
+		printf("denied");
 	}
 }
 

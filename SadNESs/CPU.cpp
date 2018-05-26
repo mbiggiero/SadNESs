@@ -79,30 +79,30 @@ void DebugASM() {
 		case(0xA2):	Debugger::Log(" %.2X     LDX #$%.2X                        A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1)); break;
 		//case(0xA6): break;
 		//case(0xB6): break;
-		//case(0xAE): break;
+		case(0xAE): Debugger::Log(" %.2X %.2X  LDX $%.4X = %.2X                  A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x2), RAM::ReadDWORD(oldPC + 0x1), RAM::ReadByte(RAM::ReadDWORD(oldPC + 1))); break;
 		//case(0xBE): break;
 
 		//LDY - Load Y Register - Immediate
 		case(0xA0):	Debugger::Log(" %.2X     LDY #$%.2X                        A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1)); break;
 		//case(0xA4): break;
 		//case(0xB4): break;
-		//case(0xAC): break;
+		case(0xAC): Debugger::Log(" %.2X %.2X  LDY $%.4X = %.2X                  A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x2), RAM::ReadDWORD(oldPC + 0x1), RAM::ReadByte(RAM::ReadDWORD(oldPC + 1))); break;
 		//case(0xBC): break;
 
 		//STX - Store X Register - Zero Page
 		case(0x86): Debugger::Log(" %.2X     STX $%.2X = %.2X                    A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1), debugByte); break;
 		//case(0x96): break;
-		//case(0x8E): break;
+		case(0x8E): Debugger::Log(" %.2X %.2X  STX $%.4X = %.2X                  A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x2), RAM::ReadDWORD(oldPC + 0x1), debugByte); break;
 
 		//STY - Store Y Register - Zero Page
 		case(0x84): Debugger::Log(" %.2X     STY $%.2X = %.2X                    A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1), debugByte); break;
 		//case(0x94): break;
-		//case(0x8C): break;
+		case(0x8C): Debugger::Log(" %.2X %.2X  STY $%.4X = %.2X                  A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x2), RAM::ReadDWORD(oldPC + 0x1), debugByte); break;
 
 		//STA - Store Accumulator Immediate
 		case(0x85): Debugger::Log(" %.2X     STA $%.2X = %.2X                    A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1), debugByte); break;
 		//case(0x95): break;
-		//case(0x8D): break;
+		case(0x8D): Debugger::Log(" %.2X %.2X  STA $%.4X = %.2X                  A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x2), RAM::ReadDWORD(oldPC + 0x1), debugByte); break;
 		//case(0x9D): break;
 		//case(0x99): break;
 		//case(0x81): break;
@@ -168,7 +168,7 @@ void DebugASM() {
 		case(0xA9): Debugger::Log(" %.2X     LDA #$%.2X                        A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x1)); break;
 		//case(0xA5): break;
 		//case(0xB5): break;
-		//case(0xAD): break;
+		case(0xAD): Debugger::Log(" %.2X %.2X  LDA $%.4X = %.2X                  A", RAM::ReadByte(oldPC + 0x1), RAM::ReadByte(oldPC + 0x2), RAM::ReadDWORD(oldPC + 0x1), RAM::ReadByte(RAM::ReadDWORD(oldPC + 1))); break;
 		//case(0xBD): break;
 		//case(0xB9): break;
 		//case(0xA1): break;
@@ -288,23 +288,29 @@ void SetN(byte target) {
 }
 
 void PushDWORDToStack(int data) {
-	RAM::WriteDWORD(0x1000 + SP, data);
+	//printf("+%.4X at %.2X\n", data, SP);
+	RAM::WriteDWORD(0x100 + SP, data);
 	SP = SP - 2;
+	
 }
 
 int PullDWORDFromStack() {
 	SP = SP + 2;
-	return RAM::ReadDWORD(0x1000 + SP);	
+	//printf("-%.4X at %.2X\n", RAM::ReadDWORD(0x100 + SP), SP);
+	return RAM::ReadDWORD(0x100 + SP);	
 }
 
 void PushByteToStack(byte data) {
-	RAM::WriteByte(0x1000 + SP, data);
+	//printf("+%.2X at %.2X\n", data, SP);
+	RAM::WriteByte(0x100 + SP, data);
 	SP = SP - 1;
+	
 }
 
 byte PullByteFromStack() {
 	SP = SP + 1;
-	return RAM::ReadByte(0x1000 + SP);
+	//printf("-%.2X at %.2X\n", RAM::ReadByte(0x100 + SP), SP);
+	return RAM::ReadByte(0x100 + SP);
 }
 
 void CheckPageSkip() {
@@ -388,21 +394,21 @@ void CPU::Decode() {
 		case(0xA2):	X = RAM::ReadByte(PC + 1); SetZ(X); SetN(X); PC++; CC = CC + 2; break;
 		//case(0xA6): break;
 		//case(0xB6): break;
-		//case(0xAE): break;
+		case(0xAE): X = RAM::ReadByte(RAM::ReadDWORD(PC + 1)); SetZ(X); SetN(X); PC = PC +2; CC = CC + 4; break;
 		//case(0xBE): break;
 
 		//LDY - Load Y Register - Immediate
 		case(0xA0):Y = RAM::ReadByte(PC + 1); SetZ(Y); SetN(Y); PC++; CC = CC + 2; break;
 		//case(0xA4): break;
 		//case(0xB4): break;
-		//case(0xAC): break;
+		case(0xAC): Y = RAM::ReadByte(RAM::ReadDWORD(PC + 1)); SetZ(Y); SetN(Y); PC = PC + 2; CC = CC + 4; break;
 		//case(0xBC): break;
 
 		//JSR - Jump to Subroutine
-		case(0x20):	PushDWORDToStack(PC); PC = RAM::ReadDWORD(PC + 1); PC--; CC = CC + 6; break;
+		case(0x20):	PushDWORDToStack(PC - 1); PC = RAM::ReadDWORD(PC + 1); PC--; CC = CC + 6; break;
 
 		//RTS - Return from Subroutine
-		case(0x60): PC = PullDWORDFromStack(); PC = PC + 2; CC = CC + 6; break;
+		case(0x60): PC = PullDWORDFromStack(); PC = PC + 1; CC = CC + 6; break;
 
 		//NOP - No Operation
 		case(0xEA): CC = CC + 2; break;
@@ -419,7 +425,7 @@ void CPU::Decode() {
 		case(0xA9): A = RAM::ReadByte(PC + 1); SetZ(A); SetN(A); PC++; CC = CC + 2; break;
 		//case(0xA5): break;
 		//case(0xB5): break;
-		//case(0xAD): break;
+		case(0xAD): A = RAM::ReadByte(RAM::ReadDWORD(PC + 1)); SetZ(A); SetN(A); PC = PC + 2; CC = CC + 4; break;
 		//case(0xBD): break;
 		//case(0xB9): break;
 		//case(0xA1): break;
@@ -513,17 +519,18 @@ void CPU::Decode() {
 		//STX - Store X Register - Zero Page
 		case(0x86): RAM::WriteByte(RAM::ReadByte(PC + 1), X); PC++; CC = CC + 3; break;
 		//case(0x96): break; ^maybe broken
-		//case(0x8E): /*TODO */ break;
+		case(0x8E): RAM::WriteByte(RAM::ReadDWORD(PC + 1), X); PC = PC +2; CC = CC + 4; break;
 
 		//STY - Store Y Register - Zero Page
 		case(0x84): RAM::WriteByte(RAM::ReadByte(PC + 1), Y); PC++; CC = CC + 3; break;
 		//case(0x94): break; ^maybe broken
-		//case(0x8C): break;
+		case(0x8C): RAM::WriteByte(RAM::ReadDWORD(PC + 1), Y); PC = PC +2; CC = CC + 4; break;
+
 
 		//STA - Store Accumulator Immediate
 		case(0x85): RAM::WriteByte(RAM::ReadByte(PC + 1), A); PC++; CC = CC + 3; break;
-		//case(0x95): break; ^maybe broken
-		//case(0x8D): break;
+		//case(0x95): break; 
+		case(0x8D): RAM::WriteByte(RAM::ReadDWORD(PC + 1), A); PC = PC + 2; CC = CC + 4; break;
 		//case(0x9D): break;
 		//case(0x99): break;
 		//case(0x81): break;
