@@ -110,7 +110,7 @@ void CompareLogs(){
 	}
 
 	int count = 0;
-	if (error == 0) printf("OK\n\n"); else {
+	if (error == 0) printf("OK up to %d\n\n", lineNumber); else {
 		char line[88]; /* or other suitable maximum line size */	
 		fgets(line, sizeof line, fp2);
 		printf("%s", line);
